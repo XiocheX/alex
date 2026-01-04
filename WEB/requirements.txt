@@ -1,0 +1,7 @@
+Flask
+psycopg2-binary
+requests
+python-telegram-bot
+Flask-Limiter
+Flask-Caching
+Flask-WTF

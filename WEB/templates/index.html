@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .neon-green {
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+        }
+        .neon-border {
+            box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 neon-green">Vault Shop</h1>
+        <div id="products" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for product in products %}
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg hover:neon-border transition duration-300">
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-32 object-cover mb-4 rounded">
+                {% endif %}
+                <h2 class="text-xl font-semibold mb-2">{{ product.name }}</h2>
+                <p class="text-gray-300 mb-4">{{ product.description }}</p>
+                <p class="text-green-400 font-bold mb-4">${{ "%.2f"|format(product.price) }}</p>
+                <button class="buy-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full" data-product-id="{{ product.id }}">Buy</button>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="order-status" class="mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-4">Order Status</h2>
+            <p id="status-text" class="text-lg">Checking...</p>
+            <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
+            <button id="cancel-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded hidden">Cancel Order</button>
+        </div>
+        <div id="delivery-form" class="mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-4">Delivery Details</h2>
+            <form id="delivery-form-el">
+                <label class="block mb-2">
+                    <input type="radio" name="method" value="telegram" required> Telegram
+                </label>
+                <label class="block mb-2">
+                    <input type="radio" name="method" value="email" required> Email
+                </label>
+                <input type="text" id="details" placeholder="Enter @username or email" class="w-full p-2 mb-4 bg-gray-700 text-white rounded" required>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Submit</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        let orderId = localStorage.getItem('orderId');
+        let pollInterval;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (orderId) {
+                showOrderStatus();
+                startPolling();
+            }
+
+            document.querySelectorAll('.buy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    if (confirm('Confirm purchase?')) {
+                        createOrder(productId);
+                    }
+                });
+            });
+
+            document.getElementById('delivery-form-el').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const method = document.querySelector('input[name="method"]:checked').value;
+                const details = document.getElementById('details').value;
+                submitDelivery(method, details);
+            });
+        });
+
+        function createOrder(productId) {
+            fetch('/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                orderId = data.order_id;
+                localStorage.setItem('orderId', orderId);
+                window.open(data.payment_url, '_blank');
+                showOrderStatus();
+                startPolling();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showOrderStatus() {
+            document.getElementById('order-status').classList.remove('hidden');
+            document.getElementById('status-text').textContent = `Order ID: ${orderId} - Status: Checking...`;
+            document.getElementById('cancel-btn').classList.remove('hidden');
+        }
+
+        function startPolling() {
+            pollInterval = setInterval(() => {
+                fetch(`/order-status/${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status-text').textContent = `Order ID: ${orderId} - Status: ${data.status}`;
+                    if (data.status === 'paid') {
+                        clearInterval(pollInterval);
+                        document.getElementById('spinner').classList.add('hidden');
+                        document.getElementById('cancel-btn').classList.add('hidden');
+                        confetti();
+                        showDeliveryForm();
+                    } else if (data.status === 'cancelled') {
+                        clearInterval(pollInterval);
+                        document.getElementById('spinner').classList.add('hidden');
+                        document.getElementById('cancel-btn').classList.add('hidden');
+                        alert('Order cancelled');
+                        localStorage.removeItem('orderId');
+                        location.reload();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }, 15000);
+        }
+
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            if (confirm('Cancel this order?')) {
+                fetch(`/cancel-order/${orderId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Order cancelled');
+                        localStorage.removeItem('orderId');
+                        location.reload();
+                    } else {
+                        alert('Failed to cancel order');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+
+        function showDeliveryForm() {
+            document.getElementById('delivery-form').classList.remove('hidden');
+        }
+
+        function submitDelivery(method, details) {
+            fetch('/submit-delivery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, method: method, details: details })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Delivery details submitted!');
+                localStorage.removeItem('orderId');
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

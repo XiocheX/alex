@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - Vault Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen flex items-center justify-center">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-6 text-center">Add Product</h1>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="mb-4">
+                {{ form.name.label(class="block text-sm font-medium mb-2") }}
+                {{ form.name(class="w-full p-2 bg-gray-700 text-white rounded") }}
+                {% if form.name.errors %}
+                <div class="text-red-400 text-sm">{{ form.name.errors[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                {{ form.price.label(class="block text-sm font-medium mb-2") }}
+                {{ form.price(class="w-full p-2 bg-gray-700 text-white rounded") }}
+                {% if form.price.errors %}
+                <div class="text-red-400 text-sm">{{ form.price.errors[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                {{ form.description.label(class="block text-sm font-medium mb-2") }}
+                {{ form.description(class="w-full p-2 bg-gray-700 text-white rounded") }}
+                {% if form.description.errors %}
+                <div class="text-red-400 text-sm">{{ form.description.errors[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                {{ form.image_url.label(class="block text-sm font-medium mb-2") }}
+                {{ form.image_url(class="w-full p-2 bg-gray-700 text-white rounded") }}
+            </div>
+            {{ form.submit(class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded") }}
+        </form>
+        <a href="{{ url_for('admin_panel') }}" class="mt-4 inline-block text-blue-400">Back to Panel</a>
+    </div>
+</body>
+</html>

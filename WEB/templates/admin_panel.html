@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Vault Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold mb-8 text-center">Admin Panel</h1>
+        <a href="{{ url_for('add_product') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Add Product</a>
+        <a href="{{ url_for('order_history') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block ml-4">Order History</a>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for product in products %}
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-32 object-cover mb-4 rounded">
+                {% endif %}
+                <h2 class="text-xl font-semibold mb-2">{{ product.name }}</h2>
+                <p class="text-gray-300 mb-4">{{ product.description }}</p>
+                <p class="text-green-400 font-bold mb-4">${{ "%.2f"|format(product.price) }}</p>
+                <a href="{{ url_for('delete_product', product_id=product.id) }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="mt-4 text-green-400">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+</body>
+</html>
